@@ -232,16 +232,24 @@ The production build includes:
 
 ## Environment Variables
 
-Currently, the API URL is hardcoded to `http://localhost:5000`. For production deployments, consider using environment variables:
+Copy the example file and add your values:
 
-Create a `.env.local` file:
-```
-NEXT_PUBLIC_API_URL=http://localhost:5000
+```bash
+cp .env.example .env.local
 ```
 
-Then update API calls to use:
+Required variables:
+
+- `NEXT_PUBLIC_MAPBOX_TOKEN`: Public Mapbox token used for rendering destination maps and previews.
+
+Recommended variables:
+
+- `NEXT_PUBLIC_API_URL`: Base URL for the Flask API (defaults to `http://localhost:5000`). Use this when deploying the frontend separately from the backend.
+
+Update API calls to use the configured base URL:
+
 ```typescript
-fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/trips`)
+fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/trips`)
 ```
 
 ## Future Enhancements

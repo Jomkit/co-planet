@@ -25,6 +25,7 @@ backend/
 
 ### Trip Management
 - Create new trips with destination, dates, summary, and attendees
+- Validate destinations with Mapbox geocoding (stored place name + coordinates)
 - View all trips or individual trip details
 - Update trip information
 - Delete trips (cascades to associated activities)
@@ -99,6 +100,23 @@ backend/
 ### Prerequisites
 - Python 3.8 or higher
 - pip (Python package manager)
+
+### Environment Variables
+
+Copy the provided example file and fill in your credentials before running the server:
+
+```bash
+cp .env.example .env
+```
+
+Load the variables into your shell (or export them via your preferred method):
+
+```bash
+export $(grep -v '^#' .env | xargs)
+```
+
+- `MAPBOX_ACCESS_TOKEN` (required): Mapbox token used by the `/api/places/search` geocoding proxy.
+- `MAPBOX_TOKEN` (optional): Alternate variable name supported by the proxy.
 
 ### Installation Steps
 
