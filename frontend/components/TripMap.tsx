@@ -1,5 +1,6 @@
 "use client";
 
+import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState } from "react";
 
 declare global {
@@ -8,41 +9,14 @@ declare global {
     }
 }
 
-const MAPBOX_SCRIPT = "https://api.mapbox.com/mapbox-gl-js/v2.16.1/mapbox-gl.js";
-const MAPBOX_STYLES = "https://api.mapbox.com/mapbox-gl-js/v2.16.1/mapbox-gl.css";
-
 async function loadMapbox(): Promise<typeof import("mapbox-gl") | null> {
     if (typeof window === "undefined") return null;
     if (window.mapboxgl) return window.mapboxgl;
 
-    await Promise.all([
-        new Promise<void>((resolve, reject) => {
-            const existingScript = document.querySelector(`script[src="${MAPBOX_SCRIPT}"]`);
-            if (existingScript) {
-                existingScript.addEventListener("load", () => resolve());
-                existingScript.addEventListener("error", () => reject(new Error("Failed to load Mapbox script")));
-                return;
-            }
-            const script = document.createElement("script");
-            script.src = MAPBOX_SCRIPT;
-            script.async = true;
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error("Failed to load Mapbox script"));
-            document.head.appendChild(script);
-        }),
-        new Promise<void>((resolve, reject) => {
-            const existingLink = document.querySelector(`link[href="${MAPBOX_STYLES}"]`);
-            if (existingLink) return resolve();
-            const link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.href = MAPBOX_STYLES;
-            link.onload = () => resolve();
-            link.onerror = () => reject(new Error("Failed to load Mapbox styles"));
-            document.head.appendChild(link);
-        })
-    ]);
-
-    return window.mapboxgl || null;
+    return import("mapbox-gl").then((module) => {
+        window.mapboxgl = module.default ?? (module as unknown as typeof import("mapbox-gl"));
+        return window.mapboxgl;
+    });
 }
 
 interface TripMapProps {
