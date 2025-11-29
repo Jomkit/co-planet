@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app import db
 from models import Trip, Activity
 from datetime import datetime
@@ -32,7 +32,8 @@ def create_trip():
         db.session.commit()
         return jsonify(new_trip.to_dict()), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        current_app.logger.exception("Failed to create trip")
+        return jsonify({'error': 'Unable to create trip. Ensure the database is migrated and request data is valid.', 'details': str(e)}), 500
 
 @trips_bp.route('/api/trips', methods=['GET'])
 def get_trips():
@@ -73,11 +74,12 @@ def update_trip(id):
         if 'end_date' in data: trip.end_date = datetime.fromisoformat(data['end_date']).date()
         if 'summary' in data: trip.summary = data['summary']
         if 'people' in data: trip.people = json.dumps(data['people'])
-        
+
         db.session.commit()
         return jsonify(trip.to_dict())
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        current_app.logger.exception("Failed to update trip")
+        return jsonify({'error': 'Unable to update trip. Ensure the database is migrated and request data is valid.', 'details': str(e)}), 500
 
 @trips_bp.route('/api/trips/<int:id>', methods=['DELETE'])
 def delete_trip(id):

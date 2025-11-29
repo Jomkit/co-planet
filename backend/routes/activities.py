@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app import db
 from models import Activity, Trip
 from datetime import datetime
@@ -23,7 +23,8 @@ def add_activity(trip_id):
         db.session.commit()
         return jsonify(new_activity.to_dict()), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        current_app.logger.exception("Failed to add activity")
+        return jsonify({'error': 'Unable to add activity. Ensure the database is migrated and request data is valid.', 'details': str(e)}), 500
 
 @activities_bp.route('/api/activities/<int:id>', methods=['PUT'])
 def update_activity(id):
@@ -36,11 +37,12 @@ def update_activity(id):
         if 'location' in data: activity.location = data['location']
         if 'notes' in data: activity.notes = data['notes']
         if 'status' in data: activity.status = data['status']
-        
+
         db.session.commit()
         return jsonify(activity.to_dict())
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        current_app.logger.exception("Failed to update activity")
+        return jsonify({'error': 'Unable to update activity. Ensure the database is migrated and request data is valid.', 'details': str(e)}), 500
 
 @activities_bp.route('/api/activities/<int:id>', methods=['DELETE'])
 def delete_activity(id):

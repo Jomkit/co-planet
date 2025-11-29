@@ -82,25 +82,35 @@ export default function TripForm() {
                 })
             });
 
-            if (!tripResponse.ok) throw new Error("Failed to create trip");
+            if (!tripResponse.ok) {
+                const errorPayload = await tripResponse.json().catch(() => ({}));
+                const message = errorPayload.error || errorPayload.details || "Failed to create trip";
+                throw new Error(message);
+            }
 
             const trip = await tripResponse.json();
 
             // 2. Create Activities
             for (const activity of formData.activities) {
                 if (activity.name) {
-                    await fetch(`http://localhost:5000/api/trips/${trip.id}/activities`, {
+                    const activityResponse = await fetch(`http://localhost:5000/api/trips/${trip.id}/activities`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(activity)
                     });
+
+                    if (!activityResponse.ok) {
+                        const errorPayload = await activityResponse.json().catch(() => ({}));
+                        const message = errorPayload.error || errorPayload.details || "Failed to create activity";
+                        throw new Error(message);
+                    }
                 }
             }
 
             router.push(`/trips/${trip.id}`);
         } catch (error) {
             console.error("Error creating trip:", error);
-            alert("Failed to create trip. Please try again.");
+            alert((error as Error).message || "Failed to create trip. Please try again.");
         }
     };
 
