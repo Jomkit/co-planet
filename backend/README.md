@@ -200,6 +200,20 @@ flask db migrate -m "Description of changes"
 flask db upgrade
 ```
 
+#### Why the new destination migration fixes the missing-column error
+If you see an error such as `table trip has no column named destination_place_name` when creating a trip, it means the database was created before the Mapbox destination fields existed. The initial Alembic migration (`20250212_add_destination_coordinates.py`) now:
+
+- Creates the `trip` and `activity` tables from scratch on a brand-new database **with** the destination columns included.
+- Adds the destination columns to an existing `trip` table that was created manually (outside Alembic) so you do not need to rebuild your data.
+
+To apply the fix on an existing database, run:
+
+```bash
+flask db upgrade
+```
+
+If you prefer a clean slate for local development, you can also remove `co_planet.db` and rerun `flask db upgrade` to recreate the schema with the corrected columns.
+
 ### Testing
 
 Run tests using pytest:
