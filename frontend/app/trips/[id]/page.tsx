@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Navigation from "@/components/Navigation";
+import TripMap from "@/components/TripMap";
 
 interface Trip {
     id: number;
     name: string;
     destination: string;
+    destination_place_name?: string;
+    destination_lat?: number;
+    destination_lng?: number;
     start_date: string;
     end_date: string;
     summary: string;
@@ -29,6 +33,7 @@ export default function TripDashboard() {
     const params = useParams();
     const [trip, setTrip] = useState<Trip | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showExpandedMap, setShowExpandedMap] = useState(false);
 
     useEffect(() => {
         const fetchTrip = async () => {
@@ -53,13 +58,17 @@ export default function TripDashboard() {
     if (loading) return <div>Loading...</div>;
     if (!trip) return <div>Trip not found</div>;
 
+    const hasDestinationCoordinates = trip.destination_lat !== null && trip.destination_lat !== undefined &&
+        trip.destination_lng !== null && trip.destination_lng !== undefined;
+    const destinationName = trip.destination_place_name || trip.destination;
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Navigation />
             <main className="container mx-auto py-8 px-4">
                 <div className="mb-8">
                     <h1 className="text-4xl font-bold text-gray-900">{trip.name}</h1>
-                    <p className="text-gray-600 mt-2">{trip.destination} • {trip.start_date} to {trip.end_date}</p>
+                    <p className="text-gray-600 mt-2">{destinationName} • {trip.start_date} to {trip.end_date}</p>
                 </div>
 
                 {/* Bento Grid */}
@@ -83,6 +92,37 @@ export default function TripDashboard() {
                         </div>
                     </div>
 
+                    {/* Destination Map */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-2">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 className="text-xl font-semibold">Destination Map</h2>
+                                <p className="text-sm text-gray-600">{destinationName}</p>
+                            </div>
+                            {hasDestinationCoordinates && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowExpandedMap(true)}
+                                    className="text-sm text-green-600 hover:text-green-500 font-medium"
+                                >
+                                    Expand
+                                </button>
+                            )}
+                        </div>
+                        {hasDestinationCoordinates ? (
+                            <TripMap
+                                latitude={Number(trip.destination_lat)}
+                                longitude={Number(trip.destination_lng)}
+                                placeName={destinationName}
+                                height={300}
+                            />
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-gray-300 p-6 text-gray-600 bg-gray-50">
+                                Add a validated destination to see it on the map.
+                            </div>
+                        )}
+                    </div>
+
                     {/* Activities Card */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-3">
                         <h2 className="text-xl font-semibold mb-4">Itinerary & Activities</h2>
@@ -102,6 +142,33 @@ export default function TripDashboard() {
 
                 </div>
             </main>
+
+            {showExpandedMap && hasDestinationCoordinates && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold">{destinationName}</h3>
+                                <p className="text-sm text-gray-600">Interactive map view</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowExpandedMap(false)}
+                                className="text-gray-600 hover:text-gray-900"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <TripMap
+                            latitude={Number(trip.destination_lat)}
+                            longitude={Number(trip.destination_lng)}
+                            placeName={destinationName}
+                            height={420}
+                            zoom={12}
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

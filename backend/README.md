@@ -14,7 +14,8 @@ backend/
 ├── models.py              # SQLAlchemy database models (Trip, Activity)
 ├── routes/
 │   ├── trips.py          # Trip-related API endpoints
-│   └── activities.py     # Activity-related API endpoints
+│   ├── activities.py     # Activity-related API endpoints
+│   └── places.py         # Mapbox-backed place search endpoint
 ├── co_planet.db          # SQLite database file
 ├── requirements.txt      # Python dependencies
 └── venv/                 # Virtual environment (not tracked in git)
@@ -39,7 +40,11 @@ backend/
 ### Trip
 - `id`: Primary key
 - `name`: Trip name (required)
-- `destination`: Trip destination(s)
+- `destination`: Trip destination(s) (backwards-compatible text)
+- `destination_place_name`: Normalized destination name from Mapbox
+- `destination_lat`: Latitude from Mapbox geocoding
+- `destination_lng`: Longitude from Mapbox geocoding
+- `destination_mapbox_id`: Mapbox feature id (optional caching key)
 - `start_date`: Trip start date
 - `end_date`: Trip end date
 - `summary`: Trip description
@@ -76,6 +81,12 @@ backend/
 | `POST` | `/api/trips/<trip_id>/activities` | Add activity to a trip |
 | `PUT` | `/api/activities/<id>` | Update an activity |
 | `DELETE` | `/api/activities/<id>` | Delete an activity |
+
+### Places (Mapbox Geocoding Proxy)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/places/search?query=<text>` | Search for destinations via Mapbox (requires access token) |
 
 ### Root
 
@@ -184,6 +195,7 @@ The application uses the following configuration:
 - **Database**: SQLite (`co_planet.db` in the backend directory)
 - **CORS**: Enabled for all origins (suitable for development)
 - **Debug Mode**: Enabled when running via `app.py`
+- **Mapbox**: Set `MAPBOX_ACCESS_TOKEN` (or `MAPBOX_TOKEN`) to enable `/api/places/search`
 
 ## API Response Format
 

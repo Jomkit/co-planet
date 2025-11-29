@@ -69,6 +69,7 @@ frontend/
   - Trip summary (2-column span)
   - Traveler badges
   - Itinerary with all activities
+- Destination map preview with expandable full-map view when coordinates are available
 - Activity cards show type, date, and location
 - Responsive grid adapts to screen size
 
@@ -138,6 +139,13 @@ The frontend connects to the Flask backend API running on `http://localhost:5000
 - `POST /api/trips` - Create a new trip
 - `GET /api/trips/:id` - Fetch trip details with activities
 - `POST /api/trips/:id/activities` - Add activities to a trip
+- `GET /api/places/search?query=` - Destination search via Mapbox (requires backend Mapbox token)
+
+### Mapbox Configuration
+
+- Backend: set `MAPBOX_ACCESS_TOKEN` (or `MAPBOX_TOKEN`) for the geocoding proxy at `/api/places/search`
+- Frontend: set `NEXT_PUBLIC_MAPBOX_TOKEN` to render maps on trip dashboards
+- Destination selection requires choosing a geocoded place (coordinates are enforced on creation)
 
 ## Key Components
 

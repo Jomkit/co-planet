@@ -6,6 +6,10 @@ class Trip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     destination = db.Column(db.String(200))
+    destination_place_name = db.Column(db.String(255))
+    destination_lat = db.Column(db.Float)
+    destination_lng = db.Column(db.Float)
+    destination_mapbox_id = db.Column(db.String(100))
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     summary = db.Column(db.Text)
@@ -18,6 +22,10 @@ class Trip(db.Model):
             'id': self.id,
             'name': self.name,
             'destination': self.destination,
+            'destination_place_name': self.destination_place_name,
+            'destination_lat': self.destination_lat,
+            'destination_lng': self.destination_lng,
+            'destination_mapbox_id': self.destination_mapbox_id,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'summary': self.summary,

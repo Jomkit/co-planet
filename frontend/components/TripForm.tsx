@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import DestinationSearch, { DestinationOption } from "./DestinationSearch";
 
 interface Activity {
     name: string;
@@ -14,13 +15,13 @@ export default function TripForm() {
 
     const [formData, setFormData] = useState({
         name: "",
-        destination: "",
         start_date: "",
         end_date: "",
         summary: "",
         people: "",
         activities: [] as Activity[]
     });
+    const [selectedDestination, setSelectedDestination] = useState<DestinationOption | null>(null);
 
     useEffect(() => {
         const nameParam = searchParams.get("name");
@@ -58,13 +59,22 @@ export default function TripForm() {
         e.preventDefault();
 
         try {
-            // 1. Create Trip
+            if (!selectedDestination) {
+                alert("Please select a destination from the suggestions to continue.");
+                return;
+            }
+
+            // 1. Create Trip with validated destination
             const tripResponse = await fetch("http://localhost:5000/api/trips", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: formData.name,
-                    destination: formData.destination,
+                    destination: selectedDestination.place_name,
+                    destination_place_name: selectedDestination.place_name,
+                    destination_lat: selectedDestination.latitude,
+                    destination_lng: selectedDestination.longitude,
+                    destination_mapbox_id: selectedDestination.id,
                     start_date: formData.start_date,
                     end_date: formData.end_date,
                     summary: formData.summary,
@@ -110,17 +120,12 @@ export default function TripForm() {
                     />
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Destination(s)</label>
-                    <input
-                        type="text"
-                        name="destination"
-                        value={formData.destination}
-                        onChange={handleInputChange}
-                        placeholder="e.g. California, Nevada, Arizona"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 border text-gray-900"
-                    />
-                </div>
+                <DestinationSearch
+                    required
+                    value={selectedDestination}
+                    onChange={setSelectedDestination}
+                    label="Destination"
+                />
 
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div>
@@ -146,7 +151,7 @@ export default function TripForm() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Who's going? (comma separated)</label>
+                    <label className="block text-sm font-medium text-gray-700">Who&apos;s going? (comma separated)</label>
                     <input
                         type="text"
                         name="people"

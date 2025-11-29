@@ -9,6 +9,7 @@ interface Trip {
     id: number;
     name: string;
     destination: string;
+    destination_place_name?: string;
     start_date: string;
     end_date: string;
 }
@@ -53,7 +54,7 @@ export default function TripsPage() {
                                 type="submit"
                                 className="rounded-full bg-green-600 px-6 py-3 text-white font-medium shadow-sm hover:bg-green-500 transition-colors"
                             >
-                                Let's Go
+                                Let&apos;s Go
                             </button>
                         </form>
                     </div>
@@ -68,7 +69,7 @@ export default function TripsPage() {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h3 className="text-xl font-semibold text-gray-900">{trip.name}</h3>
-                                                <p className="text-gray-600 mt-1">{trip.destination}</p>
+                                                <p className="text-gray-600 mt-1">{trip.destination_place_name || trip.destination}</p>
                                             </div>
                                             <div className="text-right">
                                                 <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
