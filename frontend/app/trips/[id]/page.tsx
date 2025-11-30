@@ -73,9 +73,17 @@ export default function TripDashboard() {
 
     const handleActivityUpdate = (updatedActivity: Activity) => {
         if (trip) {
-            const updatedActivities = trip.activities.map(a =>
-                a.id === updatedActivity.id ? updatedActivity : a
-            );
+            const activityExists = trip.activities.some(a => a.id === updatedActivity.id);
+            let updatedActivities;
+
+            if (activityExists) {
+                updatedActivities = trip.activities.map(a =>
+                    a.id === updatedActivity.id ? updatedActivity : a
+                );
+            } else {
+                updatedActivities = [...trip.activities, updatedActivity];
+            }
+
             setTrip({ ...trip, activities: updatedActivities });
         }
         setIsModalOpen(false);
@@ -99,31 +107,9 @@ export default function TripDashboard() {
         }
     };
 
-    const handleAddActivity = async () => {
-        const activityName = prompt("Activity name:");
-        if (!activityName?.trim()) return;
-
-        try {
-            const response = await fetch(`http://localhost:5000/api/trips/${params.id}/activities`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: activityName,
-                    type: "excursion",
-                    status: "planned"
-                })
-            });
-
-            if (response.ok) {
-                const newActivity = await response.json();
-                setTrip(prev => prev ? {
-                    ...prev,
-                    activities: [...prev.activities, newActivity]
-                } : null);
-            }
-        } catch (error) {
-            console.error("Error adding activity:", error);
-        }
+    const handleAddActivity = () => {
+        setSelectedActivity(null);
+        setIsModalOpen(true);
     };
 
     const handleDateClick = (date: Date, activities: Activity[]) => {
@@ -179,21 +165,10 @@ export default function TripDashboard() {
                 {/* Bento Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[minmax(200px,auto)]">
 
-                    {/* Calendar Card */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-3">
-                        <h2 className="text-xl font-semibold mb-4">📅 Trip Calendar</h2>
-                        <TripCalendar
-                            startDate={trip.start_date}
-                            endDate={trip.end_date}
-                            activities={trip.activities}
-                            onDateClick={handleDateClick}
-                        />
-                    </div>
-
                     {/* Summary Card */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-2">
                         <div className="flex justify-between items-start mb-4">
-                            <h2 className="text-xl font-semibold">Summary</h2>
+                            <h2 className="text-xl font-semibold text-gray-900">Summary</h2>
                             {!isEditingSummary && (
                                 <button
                                     onClick={() => setIsEditingSummary(true)}
@@ -239,7 +214,7 @@ export default function TripDashboard() {
 
                     {/* People Card */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h2 className="text-xl font-semibold mb-4">Travelers</h2>
+                        <h2 className="text-xl font-semibold mb-4 text-gray-900">Travelers</h2>
                         <div className="flex flex-wrap gap-2">
                             {trip.people.map((person, i) => (
                                 <span key={i} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
@@ -253,7 +228,7 @@ export default function TripDashboard() {
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-2">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h2 className="text-xl font-semibold">Destination Map</h2>
+                                <h2 className="text-xl font-semibold text-gray-900">Destination Map</h2>
                                 <p className="text-sm text-gray-600">{destinationName}</p>
                             </div>
                             {hasDestinationCoordinates && (
@@ -280,35 +255,79 @@ export default function TripDashboard() {
                         )}
                     </div>
 
+                    {/* Calendar Card */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-900">📅 Trip Calendar</h2>
+                        <TripCalendar
+                            startDate={trip.start_date}
+                            endDate={trip.end_date}
+                            activities={trip.activities}
+                            onDateClick={handleDateClick}
+                        />
+                    </div>
+
                     {/* Activities Card */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 md:col-span-3">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-semibold">Itinerary & Activities</h2>
-                            <button
-                                onClick={handleAddActivity}
-                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                                Add Activity
-                            </button>
+                            <h2 className="text-xl font-semibold text-gray-900">Itinerary & Activities</h2>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                             {trip.activities.map((activity) => (
                                 <div
                                     key={activity.id}
                                     onClick={() => handleActivityClick(activity)}
-                                    className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                    className="aspect-square border border-gray-200 rounded-xl p-3 hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between bg-white"
                                 >
-                                    <div className="flex justify-between items-start">
-                                        <h3 className="font-medium text-gray-900">{activity.name}</h3>
-                                        <span className="text-xs px-2 py-1 bg-gray-100 rounded-md text-gray-600 uppercase">{activity.type}</span>
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase font-medium tracking-wider">
+                                                {activity.type}
+                                            </span>
+                                            {activity.status === 'completed' && (
+                                                <span className="text-green-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                                                    </svg>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1 leading-tight">{activity.name}</h3>
+                                        {activity.date && (
+                                            <p className="text-xs text-gray-500">
+                                                {new Date(activity.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                <span className="mx-1">•</span>
+                                                {new Date(activity.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                                            </p>
+                                        )}
+                                        {activity.notes && (
+                                            <p className="text-[10px] text-gray-400 mt-1 line-clamp-2 italic">
+                                                {activity.notes}
+                                            </p>
+                                        )}
                                     </div>
-                                    {activity.date && <p className="text-sm text-gray-500 mt-2">{new Date(activity.date).toLocaleDateString()}</p>}
-                                    {activity.location && <p className="text-sm text-gray-500 mt-1">📍 {activity.location}</p>}
+                                    {activity.location && (
+                                        <p className="text-[10px] text-gray-500 truncate mt-1 flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0">
+                                                <path fillRule="evenodd" d="M9.69 18.933l.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 00.281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 103 9c0 3.492 1.698 5.988 3.355 7.625a19.055 19.055 0 002.273 1.765c.311.193.571.337.757.433.092.047.171.085.23.114.03.015.051.026.066.033l.014.007.004.002.001.001zM10 12a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                                            </svg>
+                                            {activity.location}
+                                        </p>
+                                    )}
                                 </div>
                             ))}
+
+                            {/* Add Activity Card */}
+                            <button
+                                onClick={handleAddActivity}
+                                className="aspect-square border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-green-500 hover:bg-green-50 transition-all cursor-pointer flex flex-col items-center justify-center text-gray-400 hover:text-green-600 gap-2 group"
+                            >
+                                <div className="p-3 bg-gray-50 rounded-full group-hover:bg-white transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                </div>
+                                <span className="font-medium text-sm">Add Activity</span>
+                            </button>
                         </div>
                     </div>
 
@@ -344,14 +363,13 @@ export default function TripDashboard() {
             )}
 
             {/* Activity Modal */}
-            {selectedActivity && (
-                <ActivityModal
-                    activity={selectedActivity}
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    onUpdate={handleActivityUpdate}
-                />
-            )}
+            <ActivityModal
+                activity={selectedActivity}
+                tripId={trip.id}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onUpdate={handleActivityUpdate}
+            />
 
             {/* Date Detail Modal */}
             <DateDetailModal

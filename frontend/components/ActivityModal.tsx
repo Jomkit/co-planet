@@ -14,25 +14,51 @@ interface Activity {
 }
 
 interface ActivityModalProps {
-    activity: Activity;
+    activity?: Activity | null;
+    tripId?: number;
     isOpen: boolean;
     onClose: () => void;
     onUpdate: (activity: Activity) => void;
 }
 
-export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: ActivityModalProps) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState(activity);
+export default function ActivityModal({ activity, tripId, isOpen, onClose, onUpdate }: ActivityModalProps) {
+    const isCreating = !activity;
+    const [isEditing, setIsEditing] = useState(isCreating);
+
+    const initialFormState = {
+        id: 0,
+        name: "",
+        type: "excursion",
+        date: "",
+        location: "",
+        notes: "",
+        status: "planned"
+    };
+
+    const [formData, setFormData] = useState<Activity>(activity || initialFormState);
 
     useEffect(() => {
-        setFormData(activity);
-        setIsEditing(false);
-    }, [activity]);
+        if (isOpen) {
+            if (activity) {
+                setFormData(activity);
+                setIsEditing(false);
+            } else {
+                setFormData(initialFormState);
+                setIsEditing(true);
+            }
+        }
+    }, [activity, isOpen]);
 
     const handleSave = async () => {
         try {
-            const response = await fetch(`http://localhost:5000/api/activities/${activity.id}`, {
-                method: "PUT",
+            const url = isCreating
+                ? `http://localhost:5000/api/trips/${tripId}/activities`
+                : `http://localhost:5000/api/activities/${activity?.id}`;
+
+            const method = isCreating ? "POST" : "PUT";
+
+            const response = await fetch(url, {
+                method: method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             });
@@ -40,19 +66,25 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
             if (response.ok) {
                 const updated = await response.json();
                 onUpdate(updated);
-                setIsEditing(false);
+                if (isCreating) {
+                    onClose();
+                } else {
+                    setIsEditing(false);
+                }
             }
         } catch (error) {
-            console.error("Error updating activity:", error);
+            console.error("Error saving activity:", error);
         }
     };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Activity Details</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                    {isCreating ? "Add New Activity" : "Activity Details"}
+                </h2>
                 <div className="flex gap-2">
-                    {!isEditing && (
+                    {!isCreating && !isEditing && (
                         <button
                             onClick={() => setIsEditing(true)}
                             className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -83,9 +115,10 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="e.g., Dinner at Mario's"
                         />
                     ) : (
-                        <p className="text-gray-900">{activity.name}</p>
+                        <p className="text-gray-900">{activity?.name}</p>
                     )}
                 </div>
 
@@ -103,7 +136,7 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
                             <option value="lodging">Lodging</option>
                         </select>
                     ) : (
-                        <p className="text-gray-900 capitalize">{activity.type}</p>
+                        <p className="text-gray-900 capitalize">{activity?.type}</p>
                     )}
                 </div>
 
@@ -117,7 +150,7 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500"
                         />
                     ) : (
-                        <p className="text-gray-900">{activity.date ? new Date(activity.date).toLocaleString() : "Not set"}</p>
+                        <p className="text-gray-900">{activity?.date ? new Date(activity.date).toLocaleString() : "Not set"}</p>
                     )}
                 </div>
 
@@ -129,9 +162,10 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
                             value={formData.location || ""}
                             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="e.g., 123 Main St"
                         />
                     ) : (
-                        <p className="text-gray-900">{activity.location || "Not specified"}</p>
+                        <p className="text-gray-900">{activity?.location || "Not specified"}</p>
                     )}
                 </div>
 
@@ -143,9 +177,10 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             rows={4}
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            placeholder="Add any details here..."
                         />
                     ) : (
-                        <p className="text-gray-900">{activity.notes || "No notes"}</p>
+                        <p className="text-gray-900">{activity?.notes || "No notes"}</p>
                     )}
                 </div>
 
@@ -162,7 +197,7 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
                             <option value="completed">Completed</option>
                         </select>
                     ) : (
-                        <p className="text-gray-900 capitalize">{activity.status}</p>
+                        <p className="text-gray-900 capitalize">{activity?.status}</p>
                     )}
                 </div>
             </div>
@@ -173,12 +208,16 @@ export default function ActivityModal({ activity, isOpen, onClose, onUpdate }: A
                         onClick={handleSave}
                         className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
                     >
-                        Save Changes
+                        {isCreating ? "Create Activity" : "Save Changes"}
                     </button>
                     <button
                         onClick={() => {
-                            setFormData(activity);
-                            setIsEditing(false);
+                            if (isCreating) {
+                                onClose();
+                            } else {
+                                setFormData(activity!);
+                                setIsEditing(false);
+                            }
                         }}
                         className="flex-1 bg-gray-200 text-gray-900 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
                     >
