@@ -14,7 +14,8 @@ backend/
 ├── models.py              # SQLAlchemy database models (Trip, Activity)
 ├── routes/
 │   ├── trips.py          # Trip-related API endpoints
-│   └── activities.py     # Activity-related API endpoints
+│   ├── activities.py     # Activity-related API endpoints
+│   └── places.py         # Mapbox-backed place search endpoint
 ├── co_planet.db          # SQLite database file
 ├── requirements.txt      # Python dependencies
 └── venv/                 # Virtual environment (not tracked in git)
@@ -24,6 +25,7 @@ backend/
 
 ### Trip Management
 - Create new trips with destination, dates, summary, and attendees
+- Validate destinations with Mapbox geocoding (stored place name + coordinates)
 - View all trips or individual trip details
 - Update trip information
 - Delete trips (cascades to associated activities)
@@ -39,7 +41,11 @@ backend/
 ### Trip
 - `id`: Primary key
 - `name`: Trip name (required)
-- `destination`: Trip destination(s)
+- `destination`: Trip destination(s) (backwards-compatible text)
+- `destination_place_name`: Normalized destination name from Mapbox
+- `destination_lat`: Latitude from Mapbox geocoding
+- `destination_lng`: Longitude from Mapbox geocoding
+- `destination_mapbox_id`: Mapbox feature id (optional caching key)
 - `start_date`: Trip start date
 - `end_date`: Trip end date
 - `summary`: Trip description
@@ -77,6 +83,12 @@ backend/
 | `PUT` | `/api/activities/<id>` | Update an activity |
 | `DELETE` | `/api/activities/<id>` | Delete an activity |
 
+### Places (Mapbox Geocoding Proxy)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/places/search?query=<text>` | Search for destinations via Mapbox (requires access token) |
+
 ### Root
 
 | Method | Endpoint | Description |
@@ -88,6 +100,23 @@ backend/
 ### Prerequisites
 - Python 3.8 or higher
 - pip (Python package manager)
+
+### Environment Variables
+
+Copy the provided example file and fill in your credentials before running the server:
+
+```bash
+cp .env.example .env
+```
+
+Load the variables into your shell (or export them via your preferred method):
+
+```bash
+export $(grep -v '^#' .env | xargs)
+```
+
+- `MAPBOX_ACCESS_TOKEN` (required): Mapbox token used by the `/api/places/search` geocoding proxy.
+- `MAPBOX_TOKEN` (optional): Alternate variable name supported by the proxy.
 
 ### Installation Steps
 
@@ -171,6 +200,20 @@ flask db migrate -m "Description of changes"
 flask db upgrade
 ```
 
+#### Why the new destination migration fixes the missing-column error
+If you see an error such as `table trip has no column named destination_place_name` when creating a trip, it means the database was created before the Mapbox destination fields existed. The initial Alembic migration (`20250212_add_destination_coordinates.py`) now:
+
+- Creates the `trip` and `activity` tables from scratch on a brand-new database **with** the destination columns included.
+- Adds the destination columns to an existing `trip` table that was created manually (outside Alembic) so you do not need to rebuild your data.
+
+To apply the fix on an existing database, run:
+
+```bash
+flask db upgrade
+```
+
+If you prefer a clean slate for local development, you can also remove `co_planet.db` and rerun `flask db upgrade` to recreate the schema with the corrected columns.
+
 ### Testing
 
 Run tests using pytest:
@@ -184,6 +227,7 @@ The application uses the following configuration:
 - **Database**: SQLite (`co_planet.db` in the backend directory)
 - **CORS**: Enabled for all origins (suitable for development)
 - **Debug Mode**: Enabled when running via `app.py`
+- **Mapbox**: Set `MAPBOX_ACCESS_TOKEN` (or `MAPBOX_TOKEN`) to enable `/api/places/search`
 
 ## API Response Format
 

@@ -18,9 +18,11 @@ migrate = Migrate(app, db)
 from models import Trip, Activity
 from routes.trips import trips_bp
 from routes.activities import activities_bp
+from routes.places import places_bp
 
 app.register_blueprint(trips_bp)
 app.register_blueprint(activities_bp)
+app.register_blueprint(places_bp)
 
 @app.route('/')
 def hello():

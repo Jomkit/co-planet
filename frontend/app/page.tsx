@@ -23,7 +23,7 @@ export default function Home() {
         
         <div className="space-y-4">
           <h2 className="text-2xl font-medium text-gray-800">
-            what's our next trip?
+            what&apos;s our next trip?
           </h2>
           
           <form onSubmit={handleSubmit} className="flex items-center gap-2">

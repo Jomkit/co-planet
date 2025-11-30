@@ -69,6 +69,7 @@ frontend/
   - Trip summary (2-column span)
   - Traveler badges
   - Itinerary with all activities
+- Destination map preview with expandable full-map view when coordinates are available
 - Activity cards show type, date, and location
 - Responsive grid adapts to screen size
 
@@ -138,6 +139,13 @@ The frontend connects to the Flask backend API running on `http://localhost:5000
 - `POST /api/trips` - Create a new trip
 - `GET /api/trips/:id` - Fetch trip details with activities
 - `POST /api/trips/:id/activities` - Add activities to a trip
+- `GET /api/places/search?query=` - Destination search via Mapbox (requires backend Mapbox token)
+
+### Mapbox Configuration
+
+- Backend: set `MAPBOX_ACCESS_TOKEN` (or `MAPBOX_TOKEN`) for the geocoding proxy at `/api/places/search`
+- Frontend: set `NEXT_PUBLIC_MAPBOX_TOKEN` to render maps on trip dashboards
+- Destination selection requires choosing a geocoded place (coordinates are enforced on creation)
 
 ## Key Components
 
@@ -224,16 +232,24 @@ The production build includes:
 
 ## Environment Variables
 
-Currently, the API URL is hardcoded to `http://localhost:5000`. For production deployments, consider using environment variables:
+Copy the example file and add your values:
 
-Create a `.env.local` file:
-```
-NEXT_PUBLIC_API_URL=http://localhost:5000
+```bash
+cp .env.example .env.local
 ```
 
-Then update API calls to use:
+Required variables:
+
+- `NEXT_PUBLIC_MAPBOX_TOKEN`: Public Mapbox token used for rendering destination maps and previews.
+
+Recommended variables:
+
+- `NEXT_PUBLIC_API_URL`: Base URL for the Flask API (defaults to `http://localhost:5000`). Use this when deploying the frontend separately from the backend.
+
+Update API calls to use the configured base URL:
+
 ```typescript
-fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/trips`)
+fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/trips`)
 ```
 
 ## Future Enhancements
