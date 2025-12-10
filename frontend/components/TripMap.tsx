@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from "react";
 
 declare global {
     interface Window {
-        mapboxgl?: typeof import("mapbox-gl");
+        mapboxgl?: any;
     }
 }
 
-async function loadMapbox(): Promise<typeof import("mapbox-gl") | null> {
+async function loadMapbox(): Promise<any> {
     if (typeof window === "undefined") return null;
     if (window.mapboxgl) return window.mapboxgl;
 
@@ -19,16 +19,24 @@ async function loadMapbox(): Promise<typeof import("mapbox-gl") | null> {
     });
 }
 
+interface SecondaryLocation {
+    latitude: number;
+    longitude: number;
+    placeName?: string;
+    label?: string;
+}
+
 interface TripMapProps {
     latitude: number;
     longitude: number;
     placeName?: string;
+    secondary?: SecondaryLocation | null;
     zoom?: number;
     className?: string;
     height?: number | string;
 }
 
-export default function TripMap({ latitude, longitude, placeName, zoom = 11, className, height = 260 }: TripMapProps) {
+export default function TripMap({ latitude, longitude, placeName, secondary, zoom = 11, className, height = 260 }: TripMapProps) {
     const mapContainer = useRef<HTMLDivElement | null>(null);
     const [mapError, setMapError] = useState<string | null>(null);
     const isMissingToken = !process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -38,30 +46,51 @@ export default function TripMap({ latitude, longitude, placeName, zoom = 11, cla
 
         if (isMissingToken) return;
 
-        let map: import("mapbox-gl").Map | null = null;
+        let map: any = null;
 
         loadMapbox()
             .then((mapbox) => {
                 if (!mapContainer.current || !mapbox) return;
 
-                mapbox.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+                const mapboxgl = mapbox as any;
+                mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
-                map = new mapbox.Map({
+                const hasSecondary = secondary && typeof secondary.latitude === "number" && typeof secondary.longitude === "number";
+                const initialCenter: [number, number] = hasSecondary
+                    ? [(longitude + secondary!.longitude) / 2, (latitude + secondary!.latitude) / 2]
+                    : [longitude, latitude];
+
+                map = new mapboxgl.Map({
                     container: mapContainer.current,
                     style: "mapbox://styles/mapbox/streets-v11",
-                    center: [longitude, latitude],
+                    center: initialCenter,
                     zoom
                 });
 
-                const marker = new mapbox.Marker().setLngLat([longitude, latitude]);
+                const primaryMarker = new mapboxgl.Marker({ color: "#16a34a" }).setLngLat([longitude, latitude]);
 
                 if (placeName) {
-                    const popup = new mapbox.Popup({ offset: 25 }).setText(placeName);
-                    marker.setPopup(popup);
+                    const popup = new mapboxgl.Popup({ offset: 25 }).setText(placeName);
+                    primaryMarker.setPopup(popup);
                 }
 
-                marker.addTo(map);
-                map.addControl(new mapbox.NavigationControl({ visualizePitch: true }), "top-right");
+                primaryMarker.addTo(map);
+
+                if (hasSecondary) {
+                    const secondaryMarker = new mapboxgl.Marker({ color: "#0ea5e9" }).setLngLat([secondary!.longitude, secondary!.latitude]);
+                    if (secondary?.placeName || secondary?.label) {
+                        const popup = new mapboxgl.Popup({ offset: 25 }).setText(secondary.label || secondary.placeName || "");
+                        secondaryMarker.setPopup(popup);
+                    }
+                    secondaryMarker.addTo(map);
+
+                    const bounds = new mapboxgl.LngLatBounds();
+                    bounds.extend([longitude, latitude]);
+                    bounds.extend([secondary!.longitude, secondary!.latitude]);
+                    map?.fitBounds(bounds, { padding: 60, duration: 800 });
+                }
+
+                map?.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
             })
             .catch((error) => {
                 console.error("Mapbox failed to load", error);
@@ -71,7 +100,7 @@ export default function TripMap({ latitude, longitude, placeName, zoom = 11, cla
         return () => {
             map?.remove();
         };
-    }, [latitude, longitude, placeName, zoom, isMissingToken]);
+    }, [latitude, longitude, placeName, secondary, zoom, isMissingToken]);
 
     if (mapError || isMissingToken) {
         return (
@@ -84,5 +113,18 @@ export default function TripMap({ latitude, longitude, placeName, zoom = 11, cla
         );
     }
 
-    return <div ref={mapContainer} className={`w-full rounded-xl overflow-hidden ${className ?? ""}`} style={{ height }} />;
+    return (
+        <>
+            <div
+                ref={mapContainer}
+                className={`trip-map-container w-full rounded-xl overflow-hidden ${className ?? ""}`}
+                style={{ height }}
+            />
+            <style jsx global>{`
+                .trip-map-container .mapboxgl-popup-content {
+                    color: #111827; /* darken popup text for readability */
+                }
+            `}</style>
+        </>
+    );
 }

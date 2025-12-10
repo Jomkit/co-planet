@@ -5,11 +5,17 @@ import json
 class Trip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    origin = db.Column(db.String(200))
+    origin_place_name = db.Column(db.String(255))
+    origin_lat = db.Column(db.Float)
+    origin_lng = db.Column(db.Float)
+    origin_mapbox_id = db.Column(db.String(100))
     destination = db.Column(db.String(200))
     destination_place_name = db.Column(db.String(255))
     destination_lat = db.Column(db.Float)
     destination_lng = db.Column(db.Float)
     destination_mapbox_id = db.Column(db.String(100))
+    is_round_trip = db.Column(db.Boolean, nullable=False, default=False)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     summary = db.Column(db.Text)
@@ -21,11 +27,17 @@ class Trip(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'origin': self.origin,
+            'origin_place_name': self.origin_place_name,
+            'origin_lat': self.origin_lat,
+            'origin_lng': self.origin_lng,
+            'origin_mapbox_id': self.origin_mapbox_id,
             'destination': self.destination,
             'destination_place_name': self.destination_place_name,
             'destination_lat': self.destination_lat,
             'destination_lng': self.destination_lng,
             'destination_mapbox_id': self.destination_mapbox_id,
+            'is_round_trip': self.is_round_trip,
             'start_date': self.start_date.isoformat() if self.start_date else None,
             'end_date': self.end_date.isoformat() if self.end_date else None,
             'summary': self.summary,

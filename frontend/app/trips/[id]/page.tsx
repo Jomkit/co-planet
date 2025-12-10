@@ -11,10 +11,15 @@ import DateDetailModal from "@/components/DateDetailModal";
 interface Trip {
     id: number;
     name: string;
+    origin: string;
+    origin_place_name?: string;
+    origin_lat?: number;
+    origin_lng?: number;
     destination: string;
     destination_place_name?: string;
     destination_lat?: number;
     destination_lng?: number;
+    is_round_trip: boolean;
     start_date: string;
     end_date: string;
     summary: string;
@@ -151,7 +156,10 @@ export default function TripDashboard() {
 
     const hasDestinationCoordinates = trip.destination_lat !== null && trip.destination_lat !== undefined &&
         trip.destination_lng !== null && trip.destination_lng !== undefined;
+    const hasOriginCoordinates = trip.origin_lat !== null && trip.origin_lat !== undefined &&
+        trip.origin_lng !== null && trip.origin_lng !== undefined;
     const destinationName = trip.destination_place_name || trip.destination;
+    const originName = trip.origin_place_name || trip.origin || "Start";
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -159,7 +167,9 @@ export default function TripDashboard() {
             <main className="container mx-auto py-8 px-4">
                 <div className="mb-8">
                     <h1 className="text-4xl font-bold text-gray-900">{trip.name}</h1>
-                    <p className="text-gray-600 mt-2">{destinationName} • {trip.start_date} to {trip.end_date}</p>
+                    <p className="text-gray-600 mt-2">
+                        {originName} → {destinationName} • {trip.start_date} to {trip.end_date} {trip.is_round_trip && "(Round trip)"}
+                    </p>
                 </div>
 
                 {/* Bento Grid */}
@@ -229,9 +239,9 @@ export default function TripDashboard() {
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h2 className="text-xl font-semibold text-gray-900">Destination Map</h2>
-                                <p className="text-sm text-gray-600">{destinationName}</p>
+                                <p className="text-sm text-gray-600">{originName} → {destinationName}</p>
                             </div>
-                            {hasDestinationCoordinates && (
+                            {(hasDestinationCoordinates || (trip.is_round_trip && hasOriginCoordinates)) && (
                                 <button
                                     type="button"
                                     onClick={() => setShowExpandedMap(true)}
@@ -245,12 +255,17 @@ export default function TripDashboard() {
                             <TripMap
                                 latitude={Number(trip.destination_lat)}
                                 longitude={Number(trip.destination_lng)}
-                                placeName={destinationName}
+                                placeName={`${destinationName} (End)`}
+                                secondary={hasOriginCoordinates ? {
+                                    latitude: Number(trip.origin_lat),
+                                    longitude: Number(trip.origin_lng),
+                                    placeName: `${originName} (Start)`
+                                } : null}
                                 height={300}
                             />
                         ) : (
                             <div className="rounded-xl border border-dashed border-gray-300 p-6 text-gray-600 bg-gray-50">
-                                Add a validated destination to see it on the map.
+                                Add validated origin and destination to see them on the map.
                             </div>
                         )}
                     </div>
@@ -340,7 +355,7 @@ export default function TripDashboard() {
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-4 space-y-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-lg font-semibold">{destinationName}</h3>
+                                <h3 className="text-lg font-semibold">{originName} → {destinationName}</h3>
                                 <p className="text-sm text-gray-600">Interactive map view</p>
                             </div>
                             <button
@@ -354,7 +369,12 @@ export default function TripDashboard() {
                         <TripMap
                             latitude={Number(trip.destination_lat)}
                             longitude={Number(trip.destination_lng)}
-                            placeName={destinationName}
+                            placeName={`${destinationName} (End)`}
+                            secondary={hasOriginCoordinates ? {
+                                latitude: Number(trip.origin_lat),
+                                longitude: Number(trip.origin_lng),
+                                placeName: `${originName} (Start)`
+                            } : null}
                             height={420}
                             zoom={12}
                         />

@@ -8,10 +8,13 @@ import Navigation from "@/components/Navigation";
 interface Trip {
     id: number;
     name: string;
+    origin?: string;
+    origin_place_name?: string;
     destination: string;
     destination_place_name?: string;
     start_date: string;
     end_date: string;
+    is_round_trip?: boolean;
 }
 
 export default function TripsPage() {
@@ -69,7 +72,10 @@ export default function TripsPage() {
                                         <div className="flex justify-between items-start">
                                             <div>
                                                 <h3 className="text-xl font-semibold text-gray-900">{trip.name}</h3>
-                                                <p className="text-gray-600 mt-1">{trip.destination_place_name || trip.destination}</p>
+                                                <p className="text-gray-600 mt-1">
+                                                    {(trip.origin_place_name || trip.origin || "Start")} → {trip.destination_place_name || trip.destination}
+                                                    {trip.is_round_trip ? " (Round trip)" : ""}
+                                                </p>
                                             </div>
                                             <div className="text-right">
                                                 <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
